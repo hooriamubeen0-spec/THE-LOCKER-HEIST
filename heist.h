@@ -43,7 +43,7 @@ struct Location {
 };
 
 // ================= Helper functions =================
-const int MAX_FIELDS = 12;                      // most columns any data file row can have
+const int MAX_FIELDS = 12;                      // Most columns any data file row can have
 char toUpperChar(char c);
 string toUpperString(string s);
 string intToText(int n);
@@ -55,7 +55,6 @@ bool openFile(ifstream& in, const string& name, bool skipHeader);
 bool readRow(ifstream& in, string fields[], int minColumns, const string& fileName);
 string fixRole(string role);
 int roleColumn(const string& role);
-bool sameClue(const Clue& a, const Clue& b);    // compares letter, position and row
+bool sameClue(const Clue& a, const Clue& b);    // Compares letter, position and row
 
 #endif
-
