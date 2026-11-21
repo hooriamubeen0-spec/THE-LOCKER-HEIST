@@ -122,3 +122,77 @@ int roleColumn(const string& role) {            // which profile column belongs 
 bool sameClue(const Clue& a, const Clue& b) {
     return toUpperChar(a.clueLetter) == toUpperChar(b.clueLetter) && a.cluePosition == b.cluePosition && a.clueRow == b.clueRow;
 }
+
+// ================= Character hierarchy =================
+Character::Character(const string& n, const string& r, const string& nat)
+    : characterName(n), characterRole(r), nationality(nat), isCulprit(false), interviewed(false),
+      clueRowChar(WORD_2), letterClueChar(' '), boardPosChar(0) {}
+
+Character::~Character() {}
+
+void Character::display() const { cout << characterName << "\n"; }
+
+int Character::requiredCredibility() const { return 0; }
+bool Character::isSuspect() const { return false; }
+string Character::getName() const { return characterName; }
+void Character::setClue(char letter, int pos) { letterClueChar = letter; boardPosChar = pos; }
+
+Clue Character::getClue() const {
+    Clue c;
+    c.clueLetter = letterClueChar;
+    c.cluePosition = boardPosChar;
+    c.clueRow = clueRowChar;
+    return c;
+}
+
+string Character::getRole() const { return characterRole; }
+string Character::getNationality() const { return nationality; }
+bool Character::isGuilty() const { return isCulprit; }
+void Character::setGuilty(bool value) { isCulprit = value; }
+bool Character::isInterviewed() const { return interviewed; }
+void Character::setInterviewed(bool value) { interviewed = value; }
+void Character::setBoardPos(int pos) { boardPosChar = pos; }
+void Character::setLetter(char letter) { letterClueChar = letter; }
+string Character::describe() const { return characterName + " (" + characterRole + ", " + nationality + ")"; }
+
+Victim::Victim(const string& n, const string& r, const string& nat) : Character(n, r, nat) {}
+void Victim::display() const { cout << "Victim: " << describe() << "\n"; }
+int Victim::requiredCredibility() const { return 80; }
+
+Suspect::Suspect(const string& n, const string& r, const string& nat) : Character(n, r, nat) {}
+void Suspect::display() const { cout << "Suspect: " << describe() << "\n"; }
+bool Suspect::isSuspect() const { return true; }
+
+BusinessRelations::BusinessRelations(const string& n, const string& r, const string& nat) : Suspect(n, r, nat) {}
+void BusinessRelations::display() const { cout << "Business relation: " << describe() << "\n"; }
+int BusinessRelations::requiredCredibility() const { return 50; }
+
+CloseRelations::CloseRelations(const string& n, const string& r, const string& nat) : Suspect(n, r, nat) {}
+void CloseRelations::display() const { cout << "Close relation: " << describe() << "\n"; }
+int CloseRelations::requiredCredibility() const { return 75; }
+
+HouseHelp::HouseHelp(const string& n, const string& r, const string& nat) : Suspect(n, r, nat) {}
+void HouseHelp::display() const { cout << "House help: " << describe() << "\n"; }
+
+// The virtual base class Suspect is initialised by the most derived class.
+Partner::Partner(const string& n, const string& r, const string& nat) : Suspect(n, r, nat), BusinessRelations(n, r, nat) {}
+Child::Child(const string& n, const string& r, const string& nat) : Suspect(n, r, nat), CloseRelations(n, r, nat) {}
+
+PA::PA(const string& n, const string& r, const string& nat)
+    : Suspect(n, r, nat), BusinessRelations(n, r, nat), CloseRelations(n, r, nat) {}
+void PA::display() const { cout << "Personal Assistant: " << describe() << "\n"; }
+int PA::requiredCredibility() const { return 35; }
+
+Cook::Cook(const string& n, const string& r, const string& nat) : HouseHelp(n, r, nat) {}
+Guard::Guard(const string& n, const string& r, const string& nat) : HouseHelp(n, r, nat) {}
+Servant::Servant(const string& n, const string& r, const string& nat) : HouseHelp(n, r, nat) {}
+
+Detective::Detective(const string& n, int cred)
+    : Character(n, "Detective", "Unknown"), credibility(cred), turns(0)
+{}
+
+void Detective::display() const { cout << "Detective " << characterName << " | Credibility: " << credibility << " | Turns used: " << turns << "\n"; }
+int Detective::getCredibility() const { return credibility; }
+void Detective::loseCredibility(int amount) { credibility = credibility - amount; if (credibility < 0) credibility = 0; }
+int Detective::getTurns() const { return turns; }
+void Detective::incrementTurns() { turns++; }
