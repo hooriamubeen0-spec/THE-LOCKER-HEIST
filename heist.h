@@ -156,4 +156,21 @@ public:
     void incrementTurns();
 };
 
+// ================= MODULE 4: Cottage (aggregation of Location array) =================
+class Cottage {
+    Location* locations; // array created with new (dynamic memory allocation)
+    int locationCount;
+public:
+    Cottage();
+    Cottage(const Cottage& other); // copy constructor: deep copy
+    Cottage& operator=(const Cottage& other);
+    ~Cottage(); // frees the array
+    void addLocation(const Location& l);
+    void clearLocations();
+    int getLocationCount() const;
+    Location& at(int i);
+    Clue getClue(int i) const;
+    void displayLocations() const;
+};
+
 #endif

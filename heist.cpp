@@ -196,3 +196,146 @@ int Detective::getCredibility() const { return credibility; }
 void Detective::loseCredibility(int amount) { credibility = credibility - amount; if (credibility < 0) credibility = 0; }
 int Detective::getTurns() const { return turns; }
 void Detective::incrementTurns() { turns++; }
+
+// ================= Cottage =================
+Cottage::Cottage() {
+    locations = new Location[7];
+    locationCount = 0;
+}
+
+Cottage::Cottage(const Cottage& other) { // deep copy: new array, copy every location
+    locations = new Location[7];
+    locationCount = other.locationCount;
+    for (int i = 0; i < locationCount; i++) locations[i] = other.locations[i];
+}
+
+Cottage& Cottage::operator=(const Cottage& other) {
+    if (this != &other) {
+        locationCount = other.locationCount;
+        for (int i = 0; i < locationCount; i++) locations[i] = other.locations[i];
+    }
+    return *this;
+}
+
+Cottage::~Cottage() { delete[] locations; }
+
+void Cottage::addLocation(const Location& l) {
+    if (locationCount < 7) { locations[locationCount] = l; locationCount++; }
+}
+
+void Cottage::clearLocations() { locationCount = 0; }
+int Cottage::getLocationCount() const { return locationCount; }
+Location& Cottage::at(int i) { return locations[i]; }
+
+Clue Cottage::getClue(int i) const {
+    Clue c;
+    c.clueLetter = locations[i].letterClueLoc;
+    c.cluePosition = locations[i].boardPosLoc;
+    c.clueRow = locations[i].locRow;
+    return c;
+}
+
+void Cottage::displayLocations() const {
+    cout << "\n===== Location Menu =====\n";
+    for (int i = 0; i < locationCount; i++) {
+        cout << "[" << i + 1 << "] " << locations[i].locName;
+        if (locations[i].locSearchFlag) cout << " - Searched\n";
+        else cout << " - NOT Searched\n";
+    }
+}
+
+// ================= Scrabble =================
+Scrabble::Scrabble() {
+    row1 = new Tile[7];
+    row2 = new Tile[8];
+    clearBoard();
+}
+
+Scrabble::Scrabble(const Scrabble& o) { // deep copy: new rows, copy every tile
+    row1 = new Tile[7];
+    row2 = new Tile[8];
+    target1 = o.target1;
+    target2 = o.target2;
+    for (int i = 0; i < 7; i++) row1[i] = o.row1[i];
+    for (int i = 0; i < 8; i++) row2[i] = o.row2[i];
+}
+
+Scrabble& Scrabble::operator=(const Scrabble& o) {
+    if (this != &o) {
+        target1 = o.target1;
+        target2 = o.target2;
+        for (int i = 0; i < 7; i++) row1[i] = o.row1[i];
+        for (int i = 0; i < 8; i++) row2[i] = o.row2[i];
+    }
+    return *this;
+}
+
+Scrabble::~Scrabble() {
+    delete[] row1;
+    delete[] row2;
+}
+
+void Scrabble::clearBoard() { // every slot becomes empty
+    for (int i = 0; i < 7; i++) { row1[i].tileLetter = ' '; row1[i].filled = false; }
+    for (int i = 0; i < 8; i++) { row2[i].tileLetter = ' '; row2[i].filled = false; }
+}
+
+void Scrabble::setTargets(const string& w1, const string& w2) {
+    if (w1.size() != 7 || w2.size() != 8)
+        { cout << "\n[!] " << "clue.txt is corrupted: Word_1 needs 7 letters and Word_2 needs 8." << "\n"; return; }
+    target1 = toUpperString(w1);
+    target2 = toUpperString(w2);
+    clearBoard(); // fresh empty board
+}
+
+void Scrabble::placeClue(const Clue& c) {
+    Tile* row = row2;
+    int size = 8;
+    if (c.clueRow == WORD_1) { row = row1; size = 7; }
+    const string& target = (c.clueRow == WORD_1) ? target1 : target2;
+
+    if (c.cluePosition < 1 || c.cluePosition > size)
+        { cout << "\n[!] " << "That position does not exist on the board." << "\n"; return; }
+    Tile& slot = row[c.cluePosition - 1];
+    if (slot.filled)
+        { cout << "\n[!] " << "That position is already filled." << "\n"; return; }
+
+    Clue expected; // the letter this slot should contain
+    expected.clueLetter = target[c.cluePosition - 1];
+    expected.cluePosition = c.cluePosition;
+    expected.clueRow = c.clueRow;
+    if (!sameClue(c, expected))
+        { cout << "\n[!] " << "That letter does not belong at that position." << "\n"; return; }
+
+    slot.tileLetter = toUpperChar(c.clueLetter);
+    slot.filled = true;
+}
+
+bool Scrabble::isRowComplete(WordRow r) const {
+    const Tile* row = (r == WORD_1) ? row1 : row2;
+    int size = (r == WORD_1) ? 7 : 8;
+    for (int i = 0; i < size; i++) if (!row[i].filled) return false;
+    return true;
+}
+
+bool Scrabble::checkWord(WordRow r, const string& w) const {
+    if (!isRowComplete(r)) return false;
+    if (r == WORD_1) return toUpperString(w) == target1;
+    return toUpperString(w) == target2;
+}
+
+void Scrabble::display() const {
+    cout << "Scrabble:\n Word 1: ";
+    for (int i = 0; i < 7; i++) {
+        if (row1[i].filled) cout << "[" << row1[i].tileLetter << "]";
+        else cout << "[ ]";
+    }
+    if (isRowComplete(WORD_1)) cout << " -> COMPLETE";
+    cout << "\n Word 2: ";
+    for (int i = 0; i < 8; i++) {
+        if (row2[i].filled) cout << "[" << row2[i].tileLetter << "]";
+        else cout << "[ ]";
+    }
+    if (isRowComplete(WORD_2)) cout << " -> COMPLETE";
+    cout << "\n";
+}
