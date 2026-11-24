@@ -173,4 +173,24 @@ public:
     void displayLocations() const;
 };
 
+// ================= MODULE 5: TileRack =================
+// The rack stores a Clue (letter + position) so it can show both.
+class TileRack {
+    Clue* letters;                         // array created with new
+    int capacity;
+    int count;
+public:
+    TileRack(int cap = 8);
+    TileRack(const TileRack& o);           // copy constructor: deep copy
+    TileRack& operator=(const TileRack& o);
+    ~TileRack();
+    int getCount() const;
+    void addClue(const Clue& c);
+    Clue removeLast();
+    void display() const;
+    TileRack merge(const TileRack& o) const;         // merge two racks, space between
+};
+
+
+
 #endif

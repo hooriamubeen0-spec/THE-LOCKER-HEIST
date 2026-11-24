@@ -339,3 +339,67 @@ void Scrabble::display() const {
     if (isRowComplete(WORD_2)) cout << " -> COMPLETE";
     cout << "\n";
 }
+
+// ================= TileRack =================
+TileRack::TileRack(int cap) {
+    capacity = cap;
+    count = 0;
+    letters = new Clue[capacity];
+}
+
+TileRack::TileRack(const TileRack& o) {         // deep copy
+    capacity = o.capacity;
+    count = o.count;
+    letters = new Clue[capacity];
+    for (int i = 0; i < count; i++) letters[i] = o.letters[i];
+}
+
+TileRack& TileRack::operator=(const TileRack& o) {
+    if (this != &o) {
+        delete[] letters;
+        capacity = o.capacity;
+        count = o.count;
+        letters = new Clue[capacity];
+        for (int i = 0; i < count; i++) letters[i] = o.letters[i];
+    }
+    return *this;
+}
+
+TileRack::~TileRack() { delete[] letters; }
+
+int TileRack::getCount() const { return count; }
+
+void TileRack::addClue(const Clue& c) {
+    if (getCount() >= capacity)
+        { cout << "\n[!] " << "The rack is full." << "\n"; return; }
+    letters[count] = c;
+    count++;
+}
+
+Clue TileRack::removeLast() {
+    if (getCount() == 0)
+        { cout << "\n[!] " << "The rack is empty." << "\n"; return Clue(); }
+    Clue last = letters[getCount() - 1];
+    count--;
+    return last;
+}
+
+void TileRack::display() const {
+    if (getCount() == 0) { cout << "(empty)"; return; }
+    for (int i = 0; i < getCount(); i++) {
+        if (letters[i].clueLetter == ' ') cout << "  ";                  // separator between merged racks
+        else cout << "[" << letters[i].clueLetter << "@" << letters[i].cluePosition << "] ";
+    }
+}
+
+TileRack TileRack::merge(const TileRack& o) const {                      // merge both racks as one clue
+    TileRack merged(capacity + o.capacity + 1);
+    for (int i = 0; i < getCount(); i++) merged.addClue(letters[i]);
+    Clue space;
+    space.clueLetter = ' ';
+    space.cluePosition = 0;
+    space.clueRow = WORD_1;
+    merged.addClue(space);
+    for (int i = 0; i < o.getCount(); i++) merged.addClue(o.letters[i]);
+    return merged;
+}
