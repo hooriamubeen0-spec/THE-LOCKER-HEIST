@@ -191,6 +191,25 @@ public:
     TileRack merge(const TileRack& o) const;         // merge two racks, space between
 };
 
+// ================= MODULE 6: Scrabble board =================
+class Scrabble {
+    Tile* row1;
+    Tile* row2;
+    string target1;
+    string target2;
+    void clearBoard();
+public:
+    Scrabble();
+    Scrabble(const Scrabble& o);
+    Scrabble& operator=(const Scrabble& o);
+    ~Scrabble();
+    void setTargets(const string& w1, const string& w2);
+    void placeClue(const Clue& c);
+    bool isRowComplete(WordRow r) const;
+    bool checkWord(WordRow r, const string& w) const;
+    void display() const;
+};
+
 
 
 #endif
