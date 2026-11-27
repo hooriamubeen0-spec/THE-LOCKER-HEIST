@@ -210,6 +210,15 @@ public:
     void display() const;
 };
 
+// ==========MODULE 6: leader/scoreboard==============
+class LeaderBoard {
+    string filePath;
+public:
+    LeaderBoard(const string& path);
+    void addScore(const string& name, const string& result, int cred, int turnsLeft, const string& culprit) const;
+    void display() const;
+};
+
 
 
 #endif

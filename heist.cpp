@@ -403,3 +403,32 @@ void Scrabble::display() const {
     if (isRowComplete(WORD_2)) cout << " -> COMPLETE";
     cout << "\n";
 }
+
+// ===========leaderboard ================
+LeaderBoard::LeaderBoard(const string& path) : filePath(path) {}
+
+void LeaderBoard::addScore(const string& name, const string& result, int cred, int turnsLeft, const string& culprit) const {
+    ifstream check(filePath.c_str());
+    if (!check)
+        { cout << "\n[!] " << filePath + " not found (the 'leader' folder and file must exist)." << "\n"; return; }
+    check.close();
+
+    ofstream out(filePath.c_str(), ios::app);                            // append at the end of the file
+    if (!out)
+        { cout << "\n[!] " << "Cannot write to " + filePath + "." << "\n"; return; }
+    time_t now = time(0);
+    tm* t = localtime(&now);
+    int day = t->tm_mday, month = t->tm_mon + 1, year = (t->tm_year + 1900) % 100;
+    out << name << "|" << result << "|" << cred << "|" << (turnsLeft < 10 ? "0" : "") << turnsLeft << "|" << culprit << "|"
+        << (day < 10 ? "0" : "") << day << "-" << (month < 10 ? "0" : "") << month << "-" << (year < 10 ? "0" : "") << year << "\n";
+}
+
+void LeaderBoard::display() const {
+    ifstream in;
+    if (!(openFile(in, filePath, true))) return;
+    cout << "\n=====LEADER/SCOREBOARD======\n";
+    cout << "Detective | Result | Credibility | Turns_Left | Culprit | Date\n";
+    string f[MAX_FIELDS];
+    while (readRow(in, f, 6, filePath))
+        cout << f[0] << " | " << f[1] << " | " << f[2] << " | " << f[3] << " | " << f[4] << " | " << f[5] << "\n";
+}
