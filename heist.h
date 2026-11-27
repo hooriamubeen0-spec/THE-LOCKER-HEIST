@@ -219,48 +219,6 @@ public:
     void display() const;
 };
 
-// ================= MODULES 2 and 13: GameEngine (menus and game flow) =================
-// Composition: Detective, Cottage, Scrabble, characters.  Association: LeaderBoard.
-class GameEngine {
-    GameState state;
-    int maxTurns;
-    int startingCredibility;
-    int wrongTurnPenalty;
-    int wrongWordPenalty;
-    string winCondition;
-    string loseCondition;
-    Detective detective;
-    Cottage cottage;
-    Scrabble scrabble;
-    DynamicArray<Character*> characters;        // heap objects owned by the engine
-    LeaderBoard* leaderBoard;
-    Character* culprit;
-    string culpritRole;
-    string word1;
-    string word2;
-    bool solved1;
-    bool solved2;
 
-    void clearCharacters();
-    Character* createCharacter(const string& name, const string& role, const string& nat);
-    void loadRules();
-    void loadGameData();
-    void runMainMenu();
-    void startNewGame();
-    void runGameTurn();
-    void collect(bool& done, const string& name, const Clue& c, int needCred, const string& past, const string& action);
-    void interviewPerson();
-    void formWord();
-    void accuseSuspect();
-    void concludeGame();
-public:
-    GameEngine();
-    ~GameEngine();
-    void attachLeaderBoard(LeaderBoard* b);
-    void showWelcome() const;
-    void step();
-    void handleException(const GameException& e);
-    bool isFinished() const;
-};
 
 #endif
