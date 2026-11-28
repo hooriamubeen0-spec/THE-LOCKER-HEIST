@@ -80,11 +80,10 @@ int textToInt(const string& s);
 string readLine(const string& prompt);
 int readInt(const string& prompt, int low, int high);
 bool readYesNo(const string& prompt);
-bool openFile(ifstream& in, const string& name, bool skipHeader);
+void openFile(ifstream& in, const string& name, bool skipHeader);
 bool readRow(ifstream& in, string fields[], int minColumns, const string& fileName);
 string fixRole(string role);
 int roleColumn(const string& role);
-bool sameClue(const Clue& a, const Clue& b);    // Compares letter, position and row
 
 // ================= MODULE 11: Operator overloading on structs =================
 bool operator==(const Clue& a, const Clue& b);  // compares letter, position, row
