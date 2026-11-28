@@ -254,48 +254,51 @@ public:
     void display() const;
 };
 
-// ================= MODULE 8: Template DynamicArray<T> =================
-template<class T>
+// ========= MODULE 8: Template DynamicArray<T> ===========
+template <typename T>
 class DynamicArray {
     T* data;
-    int count;
     int capacity;
-    void expand() {
-        int newCapacity = capacity * 2;
-        T* newData = new T[newCapacity];
-       for (int i = 0; i < count; i++)
-            newData[i] = data[i];
-            delete[] data;
-        data = newData;
-        capacity = newCapacity;
+    int count;
+    void grow(int minCapacity) {
+        int newCap = capacity * 2;
+        if (newCap < minCapacity) newCap = minCapacity;
+        T* bigger = new T[newCap];
+        for (int i = 0; i < count; i++) bigger[i] = data[i];
+        delete[] data;
+        data = bigger;
+        capacity = newCap;
     }
 public:
-    DynamicArray() {
-        capacity = 10;
+    DynamicArray(int cap = 4) {
+        capacity = (cap < 1) ? 1 : cap;
         count = 0;
         data = new T[capacity];
     }
-    ~DynamicArray() {
-        delete[] data;
+    DynamicArray(const DynamicArray& other) {
+        capacity = other.capacity;
+        count = other.count;
+        data = new T[capacity];
+        for (int i = 0; i < count; i++) data[i] = other.data[i];
     }
-    int size() const {
-        return count;
+    DynamicArray& operator=(const DynamicArray& other) {
+        if (this != &other) {
+            delete[] data;
+            capacity = other.capacity;
+            count = other.count;
+            data = new T[capacity];
+            for (int i = 0; i < count; i++) data[i] = other.data[i];
+        }
+        return *this;
     }
-    void add(T value) {
-        if (count == capacity)
-            expand();
-        data[count] = value;
-        count++;
-    }
-    void clear() {
-        count = 0;
-    }
-    T& operator[](int index) {
-        return data[index];
-    }
-    const T& operator[](int index) const {
-        return data[index];
-    }
+    ~DynamicArray() { delete[] data; }
+
+    void add(const T& item) { if (count == capacity) grow(count + 1); data[count] = item; count++; }
+    void resize(int n) { if (n > capacity) grow(n); for (int i = count; i < n; i++) data[i] = T(); count = n; }
+    void clear() { count = 0; }
+    int size() const { return count; }
+    T& operator[](int i) { if (i < 0 || i >= count) throw InvalidPositionException("Index is outside the array."); return data[i]; }
+    const T& operator[](int i) const { if (i < 0 || i >= count) throw InvalidPositionException("Index is outside the array."); return data[i]; }
 };
 
 // ================= MODULES 2 and 13: GameEngine (menus and game flow) =================
