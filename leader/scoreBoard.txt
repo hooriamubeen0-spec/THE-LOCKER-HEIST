@@ -2,3 +2,4 @@ Detective|Result|Credibility|Turns_Left|Culprit|Date
 Agent_007|LOSE|0|05|Servant|11-10-26
 Insp.Jamshaid|WIN|35|07|Partner_2|10-10-26
 
+hooria|WIN|70|16|Cook|28-11-26
