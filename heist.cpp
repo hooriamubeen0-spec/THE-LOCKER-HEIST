@@ -1,7 +1,30 @@
 // heist.cpp - THE LOCKER HEIST: implementation of all classes
+#define _CRT_SECURE_NO_WARNING
 #include "heist.h"
 #include <cstdlib>
+#include<iostream>
+#include<string>
 #include <ctime>
+
+// ================= Exception classes =================
+GameException::GameException(const string& t, const string& m, int p, bool u) : type(t), message(m), penalty(p), usesTurn(u) {}
+GameException::~GameException() {}
+string GameException::getType() const { return type; }
+string GameException::getMessage() const { return message; }
+int GameException::getPenalty() const { return penalty; }
+bool GameException::consumesTurn() const { return usesTurn; }
+InvalidInputException::InvalidInputException(const string& m) : GameException("InvalidInputException", m, 0, false) {}
+InvalidPositionException::InvalidPositionException(const string& m) : GameException("InvalidPositionException", m, 0, false) {}
+SlotFilledException::SlotFilledException(const string& m) : GameException("SlotFilledException", m, 0, false) {}
+WrongLetterException::WrongLetterException(const string& m) : GameException("WrongLetterException", m, 0, false) {}
+RackFullException::RackFullException(const string& m) : GameException("RackFullException", m, 0, false) {}
+RackEmptyException::RackEmptyException(const string& m) : GameException("RackEmptyException", m, 0, false) {}
+WordNotReadyException::WordNotReadyException(const string& m) : GameException("WordNotReadyException", m, 0, false) {}
+FileException::FileException(const string& m) : GameException("FileException", m, 0, false) {}
+InvalidWordException::InvalidWordException(const string& m, int p) : GameException("InvalidWordException", m, p, true) {}
+LowCredibilityException::LowCredibilityException(const string& m, int p) : GameException("LowCredibilityException", m, p, true) {}
+WrongAccusationException::WrongAccusationException(const string& m, int p) : GameException("WrongAccusationException", m, p, true) {}
+
 
 // ================= Helper functions =================
 char toUpperChar(char c) {
@@ -121,6 +144,24 @@ int roleColumn(const string& role) {            // which profile column belongs 
 
 bool sameClue(const Clue& a, const Clue& b) {
     return toUpperChar(a.clueLetter) == toUpperChar(b.clueLetter) && a.cluePosition == b.cluePosition && a.clueRow == b.clueRow;
+}
+
+// ================= Operator overloading =================
+bool operator==(const Clue& a, const Clue& b) {
+    return toUpperChar(a.clueLetter) == toUpperChar(b.clueLetter) && a.cluePosition == b.cluePosition && a.clueRow == b.clueRow;
+}
+
+ostream& operator<<(ostream& os, const Tile& t) {
+    if (t.filled) os << "[" << t.tileLetter << "]";
+    else os << "[ ]";
+    return os;
+}
+
+ostream& operator<<(ostream& os, const Location& l) {
+    os << l.locName;
+    if (l.locSearchFlag) os << " - Searched";
+    else os << " - NOT Searched";
+    return os;
 }
 
 // ================= Character hierarchy =================
@@ -638,8 +679,8 @@ void GameEngine::startNewGame() {
 void GameEngine::runGameTurn() {
     cout << "\n";
     detective.display();
-    cout << "Rack Word 1: "; detective.getRack(WORD_1).display();
-    cout << "\nRack Word 2: "; detective.getRack(WORD_2).display();
+    cout << "Rack Word 1: "; rack1.display();
+    cout << "\nRack Word 2: "; rack2.display();
     cout << "\n\n==== Game Menu ====\n";
     cout << "[1] Visit a Location\n[2] Interview a Person\n[3] View Scrabble Board (free - no turn)\n";
     cout << "[4] Form a Word\n[5] Accuse a Suspect\n[6] Quit\n";
@@ -670,7 +711,8 @@ void GameEngine::collect(bool& done, const string& name, const Clue& c, int need
         if (!readYesNo(action + "? (Y/N): ")) return;               // answering N costs no turn
         if (detective.getCredibility() < needCred)
             throw LowCredibilityException(name + " refuses to talk: needs credibility of at least " + intToText(needCred) + ".", wrongTurnPenalty);
-        detective.collectClue(c);
+      if (c.clueRow == WORD_1) rack1.addClue(c);
+      else rack2.addClue(c);
         scrabble.placeClue(c);
         done = true;
         cout << "Letter " << c.clueLetter << " collected at position " << c.cluePosition << " of Word " << wordNo << ".\n";
@@ -715,7 +757,7 @@ void GameEngine::formWord() {
     detective.incrementTurns();
     cout << "Correct! " << toUpperString(typed) << " is right.\n";
     if (solved1 && solved2) {
-        TileRack evidence = detective.getRack(WORD_1).merge(detective.getRack(WORD_2));
+        TileRack evidence = rack1.merge(rack2);
         cout << "\nBoth words solved. Evidence rack: ";
         evidence.display();
         cout << "\n" << word1 << " + " << word2 << " = " << culprit->getNationality() << " -> the " << culpritRole << " is the culprit!\n";

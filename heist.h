@@ -1,4 +1,4 @@
-// heist.h - THE LOCKER HEIST: declarations of all classes
+// heist.h THE LOCKER HEIST: declarations of all classes
 #ifndef HEIST_H
 #define HEIST_H
 #include <iostream>
@@ -11,7 +11,8 @@ enum WordRow {
 	WORD_1,
 	WORD_2 
 };
-enum GameState { STATE_MENU,
+enum GameState { 
+    STATE_MENU,
 	STATE_PLAYING,
 	STATE_WON,
 	STATE_LOST,
@@ -42,6 +43,34 @@ struct Location {
 	bool locSearchFlag;
 };
 
+// ================= MODULE 7: Exception classes =================
+// penalty = credibility lost, usesTurn = the mistake also costs a turn
+class GameException {
+    string type;
+    string message;
+    int penalty;
+    bool usesTurn;
+public:
+    GameException(const string& t, const string& m, int p, bool u);
+    virtual ~GameException();
+    string getType() const;
+    string getMessage() const;
+    int getPenalty() const;
+    bool consumesTurn() const;
+};
+class InvalidInputException : public GameException { public: InvalidInputException(const string& m); };
+class InvalidPositionException : public GameException { public: InvalidPositionException(const string& m); };
+class SlotFilledException : public GameException { public: SlotFilledException(const string& m); };
+class WrongLetterException : public GameException { public: WrongLetterException(const string& m); };
+class RackFullException : public GameException { public: RackFullException(const string& m); };
+class RackEmptyException : public GameException { public: RackEmptyException(const string& m); };
+class WordNotReadyException : public GameException { public: WordNotReadyException(const string& m); };
+class FileException : public GameException { public: FileException(const string& m); };
+class InvalidWordException : public GameException { public: InvalidWordException(const string& m, int p); };
+class LowCredibilityException : public GameException { public: LowCredibilityException(const string& m, int p); };
+class WrongAccusationException : public GameException { public: WrongAccusationException(const string& m, int p); };
+
+
 // ================= Helper functions =================
 const int MAX_FIELDS = 12;                      // Most columns any data file row can have
 char toUpperChar(char c);
@@ -56,6 +85,12 @@ bool readRow(ifstream& in, string fields[], int minColumns, const string& fileNa
 string fixRole(string role);
 int roleColumn(const string& role);
 bool sameClue(const Clue& a, const Clue& b);    // Compares letter, position and row
+
+// ================= MODULE 11: Operator overloading on structs =================
+bool operator==(const Clue& a, const Clue& b);  // compares letter, position, row
+ostream& operator<<(ostream& os, const Tile& t);
+ostream& operator<<(ostream& os, const Location& l);
+
 
 // ================= MODULE 3: Character hierarchy =================
 class Character {
@@ -219,6 +254,50 @@ public:
     void display() const;
 };
 
+// ================= MODULE 8: Template DynamicArray<T> =================
+template<class T>
+class DynamicArray {
+    T* data;
+    int count;
+    int capacity;
+    void expand() {
+        int newCapacity = capacity * 2;
+        T* newData = new T[newCapacity];
+       for (int i = 0; i < count; i++)
+            newData[i] = data[i];
+            delete[] data;
+        data = newData;
+        capacity = newCapacity;
+    }
+public:
+    DynamicArray() {
+        capacity = 10;
+        count = 0;
+        data = new T[capacity];
+    }
+    ~DynamicArray() {
+        delete[] data;
+    }
+    int size() const {
+        return count;
+    }
+    void add(T value) {
+        if (count == capacity)
+            expand();
+        data[count] = value;
+        count++;
+    }
+    void clear() {
+        count = 0;
+    }
+    T& operator[](int index) {
+        return data[index];
+    }
+    const T& operator[](int index) const {
+        return data[index];
+    }
+};
+
 // ================= MODULES 2 and 13: GameEngine (menus and game flow) =================
 // Composition: Detective, Cottage, Scrabble, characters.  Association: LeaderBoard.
 class GameEngine {
@@ -232,6 +311,8 @@ class GameEngine {
     Detective detective;
     Cottage cottage;
     Scrabble scrabble;
+    TileRack rack1;
+    TileRack rack2;
     DynamicArray<Character*> characters;        // heap objects owned by the engine
     LeaderBoard* leaderBoard;
     Character* culprit;
