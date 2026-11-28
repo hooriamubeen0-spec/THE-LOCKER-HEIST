@@ -71,6 +71,55 @@ class LowCredibilityException : public GameException { public: LowCredibilityExc
 class WrongAccusationException : public GameException { public: WrongAccusationException(const string& m, int p); };
 
 
+// ================= MODULE 8: Template DynamicArray<T> =================
+// Generic array on the heap with copy constructor, assignment operator and destructor (deep copy).
+template <typename T>
+// Class Begin: DynamicArray
+class DynamicArray {
+    T* data;
+    int capacity;
+    int count;
+    void grow(int minCapacity) {
+        int newCap = capacity * 2;
+        if (newCap < minCapacity) newCap = minCapacity;
+        T* bigger = new T[newCap];
+        for (int i = 0; i < count; i++) bigger[i] = data[i];
+        delete[] data;
+        data = bigger;
+        capacity = newCap;
+    }
+public:
+    DynamicArray(int cap = 4) {
+        capacity = (cap < 1) ? 1 : cap;
+        count = 0;
+        data = new T[capacity];
+    }
+    DynamicArray(const DynamicArray& other) {
+        capacity = other.capacity;
+        count = other.count;
+        data = new T[capacity];
+        for (int i = 0; i < count; i++) data[i] = other.data[i];
+    }
+    DynamicArray& operator=(const DynamicArray& other) {
+        if (this != &other) {
+            delete[] data;
+            capacity = other.capacity;
+            count = other.count;
+            data = new T[capacity];
+            for (int i = 0; i < count; i++) data[i] = other.data[i];
+        }
+        return *this;
+    }
+    ~DynamicArray() { delete[] data; }
+
+    void add(const T& item) { if (count == capacity) grow(count + 1); data[count] = item; count++; }
+    void resize(int n) { if (n > capacity) grow(n); for (int i = count; i < n; i++) data[i] = T(); count = n; }
+    void clear() { count = 0; }
+    int size() const { return count; }
+    T& operator[](int i) { if (i < 0 || i >= count) throw InvalidPositionException("Index is outside the array."); return data[i]; }
+    const T& operator[](int i) const { if (i < 0 || i >= count) throw InvalidPositionException("Index is outside the array."); return data[i]; }
+};
+
 // ================= Helper functions =================
 const int MAX_FIELDS = 12;                      // Most columns any data file row can have
 char toUpperChar(char c);
@@ -105,21 +154,14 @@ protected:
 public:
     Character(const string& n, const string& r, const string& nat);
     virtual ~Character();
-    virtual void display() const;                              // virtual: derived classes override it
+    virtual void display() const = 0;
     virtual int requiredCredibility() const;
     virtual bool isSuspect() const;
     string getName() const;
     void setClue(char letter, int pos);
     Clue getClue() const;
-    string getRole() const;
-    string getNationality() const;
-    bool isGuilty() const;
-    void setGuilty(bool value);
-    bool isInterviewed() const;
-    void setInterviewed(bool value);
-    void setBoardPos(int pos);
-    void setLetter(char letter);
-    string describe() const;
+    friend ostream& operator<<(ostream& os, const Character& c);
+    friend class GameEngine;
 };
 
 class Victim : public Character {
@@ -178,9 +220,28 @@ class Cook : public HouseHelp { public: Cook(const string& n, const string& r, c
 class Guard : public HouseHelp { public: Guard(const string& n, const string& r, const string& nat); };
 class Servant : public HouseHelp { public: Servant(const string& n, const string& r, const string& nat); };
 
+// ================= MODULE 5: TileRack =================
+// The rack stores a Clue (letter + position) so it can show both.
+class TileRack {
+    DynamicArray<Clue> letters;            // dynamic array of clues
+    int capacity;
+public:
+    TileRack(int cap = 8);
+    TileRack(const TileRack& o);           // copy constructor: deep copy
+    TileRack& operator=(const TileRack& o);
+    ~TileRack();
+    int getCount() const;
+    void addClue(const Clue& c);
+    Clue removeLast();
+    void display() const;
+    TileRack operator+(const TileRack& o) const;     // merge two racks, space between
+};
+
 class Detective : public Character {
     int credibility;
     int turns;                                  // the engine increments, the detective only stores
+    TileRack rack1;
+    TileRack rack2;
 public:
     Detective(const string& n = "Detective", int cred = 100);
     void display() const;
@@ -188,12 +249,13 @@ public:
     void loseCredibility(int amount);
     int getTurns() const;
     void incrementTurns();
+    void collectClue(const Clue& c);
+    const TileRack& getRack(WordRow r) const;
 };
 
 // ================= MODULE 4: Cottage (aggregation of Location array) =================
 class Cottage {
-    Location* locations; // array created with new (dynamic memory allocation)
-    int locationCount;
+    DynamicArray<Location> locations;      // dynamic array of locations
 public:
     Cottage();
     Cottage(const Cottage& other); // copy constructor: deep copy
@@ -207,31 +269,12 @@ public:
     void displayLocations() const;
 };
 
-// ================= MODULE 5: TileRack =================
-// The rack stores a Clue (letter + position) so it can show both.
-class TileRack {
-    Clue* letters;                         // array created with new
-    int capacity;
-    int count;
-public:
-    TileRack(int cap = 8);
-    TileRack(const TileRack& o);           // copy constructor: deep copy
-    TileRack& operator=(const TileRack& o);
-    ~TileRack();
-    int getCount() const;
-    void addClue(const Clue& c);
-    Clue removeLast();
-    void display() const;
-    TileRack merge(const TileRack& o) const;         // merge two racks, space between
-};
-
 // ================= MODULE 6: Scrabble board =================
 class Scrabble {
-    Tile* row1;
-    Tile* row2;
+    DynamicArray<Tile> row1;
+    DynamicArray<Tile> row2;
     string target1;
     string target2;
-    void clearBoard();
 public:
     Scrabble();
     Scrabble(const Scrabble& o);
@@ -241,7 +284,7 @@ public:
     void placeClue(const Clue& c);
     bool isRowComplete(WordRow r) const;
     bool checkWord(WordRow r, const string& w) const;
-    void display() const;
+    friend ostream& operator<<(ostream& os, const Scrabble& s);
 };
 
 // ==========MODULE 6: leader/scoreboard==============
@@ -253,56 +296,10 @@ public:
     void display() const;
 };
 
-// ========= MODULE 8: Template DynamicArray<T> ===========
-template <typename T>
-class DynamicArray {
-    T* data;
-    int capacity;
-    int count;
-    void grow(int minCapacity) {
-        int newCap = capacity * 2;
-        if (newCap < minCapacity) newCap = minCapacity;
-        T* bigger = new T[newCap];
-        for (int i = 0; i < count; i++) bigger[i] = data[i];
-        delete[] data;
-        data = bigger;
-        capacity = newCap;
-    }
-public:
-    DynamicArray(int cap = 4) {
-        capacity = (cap < 1) ? 1 : cap;
-        count = 0;
-        data = new T[capacity];
-    }
-    DynamicArray(const DynamicArray& other) {
-        capacity = other.capacity;
-        count = other.count;
-        data = new T[capacity];
-        for (int i = 0; i < count; i++) data[i] = other.data[i];
-    }
-    DynamicArray& operator=(const DynamicArray& other) {
-        if (this != &other) {
-            delete[] data;
-            capacity = other.capacity;
-            count = other.count;
-            data = new T[capacity];
-            for (int i = 0; i < count; i++) data[i] = other.data[i];
-        }
-        return *this;
-    }
-    ~DynamicArray() { delete[] data; }
-
-    void add(const T& item) { if (count == capacity) grow(count + 1); data[count] = item; count++; }
-    void resize(int n) { if (n > capacity) grow(n); for (int i = count; i < n; i++) data[i] = T(); count = n; }
-    void clear() { count = 0; }
-    int size() const { return count; }
-    T& operator[](int i) { if (i < 0 || i >= count) throw InvalidPositionException("Index is outside the array."); return data[i]; }
-    const T& operator[](int i) const { if (i < 0 || i >= count) throw InvalidPositionException("Index is outside the array."); return data[i]; }
-};
-
 // ================= MODULES 2 and 13: GameEngine (menus and game flow) =================
 // Composition: Detective, Cottage, Scrabble, characters.  Association: LeaderBoard.
 class GameEngine {
+    static GameEngine* instance;
     GameState state;
     int maxTurns;
     int startingCredibility;
@@ -313,8 +310,6 @@ class GameEngine {
     Detective detective;
     Cottage cottage;
     Scrabble scrabble;
-    TileRack rack1;
-    TileRack rack2;
     DynamicArray<Character*> characters;        // heap objects owned by the engine
     LeaderBoard* leaderBoard;
     Character* culprit;
@@ -336,9 +331,14 @@ class GameEngine {
     void formWord();
     void accuseSuspect();
     void concludeGame();
-public:
+private:
     GameEngine();
+    GameEngine(const GameEngine&);
+    GameEngine& operator=(const GameEngine&);
     ~GameEngine();
+public:
+    static GameEngine& getInstance();
+    static void destroyInstance();
     void attachLeaderBoard(LeaderBoard* b);
     void showWelcome() const;
     void step();
